@@ -33,7 +33,8 @@ urls = (
     '/api/.*/lights',       'api_light_collection',
     '/api/.*/lights/new',   'api_light_collection',
     
-    '/api/.*/lights/(\d+)', 'api_light',
+    '/api/.*/lights/(\d+)',       'api_light',
+    '/api/.*/lights/(\d+)/state', 'api_light_state',
     
     '/api/.*/config',       'api_config',
     #'/api/.*',              'api_config',
@@ -67,15 +68,32 @@ class api_light_collection:
         return json.dumps(todict(hue.full_state.lights))
 
 class api_light:
-    def GET(self, id):
+    def GET(self, light_id):
         print "Handle GET light"
-        return json.dumps(todict(hue.full_state.lights[id]))
+        return json.dumps(todict(hue.full_state.lights[light_id]))
         
     def PUT(self, light_id):
         print "Handle PUT light"
-        request_body = json.loads(web.data()) 
-        hue.full_state.lights[light_id].name = request_body['name']
-        return json.dumps({'success': {'/lights/' + light_id + '/name': hue.full_state.lights[light_id].name}})
+        request_body = json.loads(web.data())
+        hue.full_state.lights[light_id]['name'] = request_body['name']
+        return json.dumps({'success': {'/lights/' + light_id + '/name': hue.full_state.lights[light_id]['name']}})
+        
+class api_light_state:
+    def PUT(self, light_id):
+        request_body = json.loads(web.data())
+        response = []
+        light_state = todict(hue.full_state.lights[light_id]['state'])
+        print request_body
+        print light_state
+        for key, value in request_body.items():
+            if str(key) in light_state:
+                hue.full_state.lights[light_id]['state'][str(key)] = value
+                print 'set ' + str(key) + ' to ' + str(value)
+                response.append({"success": {str(key): value}})
+            #else:
+                #break
+        print json.dumps(response)
+        return json.dumps(response)
 
 class api_config:
     def GET(self):
